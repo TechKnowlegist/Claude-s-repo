@@ -15,6 +15,11 @@ classifiers = [
     "Programming Language :: Python :: 3",
     "Topic :: Artistic Software",
 ]
+dependencies = [
+    # The stdlib curses module doesn't exist on Windows; this ships an
+    # equivalent so interactive playback works there too.
+    "windows-curses; platform_system == 'Windows'",
+]
 
 [project.scripts]
 asciiverse = "asciiverse.cli:main"
