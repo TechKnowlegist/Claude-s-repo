@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "asciiverse"
 version = "0.1.0"
-description = "A little terminal full of generative ASCII scenes: starfields, digital rain, cellular automata, fireworks."
+description = "A terminal full of generative ASCII scenes, scripted short films, and a real video-to-ASCII player."
 readme = "README.md"
 requires-python = ">=3.9"
 license = { text = "MIT" }
