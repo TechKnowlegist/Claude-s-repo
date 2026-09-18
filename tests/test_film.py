@@ -1,5 +1,6 @@
 import pytest
 
+from asciiverse.color import visible_length
 from asciiverse.film import Crawl, Film, SceneShot, TitleCard, composite, dither_fade, draw_text_block
 from asciiverse.film.shorts import SHORTS
 from asciiverse.scenes import Starfield
@@ -110,9 +111,15 @@ def test_film_requires_at_least_one_shot():
 @pytest.mark.parametrize("name", sorted(SHORTS))
 def test_shipped_shorts_render_full_length_without_error(name):
     film = SHORTS[name](width=40, height=16, fps=8)
+    is_color = getattr(film, "color", False)
     for _ in range(film.total_frames):
         lines = film.render()
         assert len(lines) == 16
-        assert all(len(line) == 40 for line in lines)
+        if is_color:
+            # Colored lines carry ANSI escapes, so measure visible width
+            # rather than raw string length.
+            assert all(visible_length(line) == 40 for line in lines)
+        else:
+            assert all(len(line) == 40 for line in lines)
         film.step()
     assert film.finished

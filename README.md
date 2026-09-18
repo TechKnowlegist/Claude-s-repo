@@ -32,24 +32,36 @@ asciiverse scene life --width 40 --height 20 --seed 1 --frames 5 --fps 0
 
 ## Films
 
-Two original short films, built entirely out of the scenes above plus a
-small compositing/title-card/subtitle/scroll-crawl toolkit — no video files,
-no external assets, just code:
+Four original short films, built entirely out of code — no video files, no
+external assets:
 
-- **orbital** — a ~30s sci-fi short: title card, a Star-Wars-style crawl over
+- **orbital** — a ~30s sci-fi short: title card, a scrolling text crawl over
   a starfield, a hand-drawn ship flying through with subtitled dialogue, and
-  fireworks.
+  fireworks. Plain ASCII.
 - **echo** — a quieter, more abstract piece: a cellular automaton waking up,
   a machine dreaming in falling glyphs, and a starfield it can't quite reach.
+  Plain ASCII.
+- **garden** — a ~20s color short: dawn breaks (a real 24-bit ANSI color sky
+  gradient) over a plot of ground while flowers grow in and fireflies drift
+  by. Full color.
+- **neon** — a ~19s color short: a synthwave-style skyline, a glowing sun
+  behind silhouetted buildings, and a scrolling neon floor grid. Full color.
+
+`orbital` and `echo` are built with a small compositing/title-card/subtitle
+/scroll-crawl toolkit (`asciiverse/film/*.py`); `garden` and `neon` paint
+directly in 24-bit color (`asciiverse/color.py`) since that toolkit's
+plain-text grid doesn't carry color.
 
 ```
 asciiverse film --list
 asciiverse film orbital
-asciiverse film echo --width 100 --height 30
+asciiverse film garden --width 100 --height 32
 ```
 
-Films play through the same interactive/headless machinery as scenes and
-stop automatically at the end (or press `q`/`Esc` to bail early).
+Films play through the same headless machinery as scenes' `--frames` mode
+and stop automatically at the end. The color films need a terminal that
+understands ANSI color (any modern terminal, including Windows Terminal /
+Windows 10+ `cmd.exe`).
 
 ## Play (real video → ASCII, with audio)
 
@@ -81,6 +93,19 @@ subprocess as raw PPM images and converted to characters on the fly.
 pip install -e ".[dev]"
 ```
 
+## Standalone copies
+
+`standalone/` has every scene and film as one self-contained `.py` file each
+— pure stdlib, no `pip install`, no package to clone into. Copy a single
+file anywhere and run it:
+
+```
+python standalone/ascii_film_garden.py
+```
+
+They're kept in sync with the package versions by hand (there are only a
+handful), trading a little duplication for "just run this one file."
+
 ## Design
 
 Every scene's simulation (`asciiverse/scenes/*.py`) and every film primitive
@@ -88,10 +113,14 @@ Every scene's simulation (`asciiverse/scenes/*.py`) and every film primitive
 `step()` advances the state and `render()` returns a list of fixed-width
 strings. A `Film` exposes that same interface, backed internally by a list
 of `Shot`s (title cards, scene backdrops with subtitles and sprites, and
-scroll crawls). `cli.py` is the only module that touches `curses`; `video.py`
-is the only module that shells out to `ffmpeg`/`ffplay`. Keeping those
-boundaries is what makes almost everything else straightforward to unit
-test without a real terminal or a video file — see `tests/`.
+scroll crawls). The color films (`garden`, `neon`) implement that same
+`step()`/`render()` shape directly rather than going through `Film`/`Shot`,
+since a colored line embeds ANSI escapes and no longer has "one character
+per visible column" — see `asciiverse/color.py`'s `visible_length()` for how
+tests measure width on those. `cli.py` is the only module that touches
+`curses`; `video.py` is the only module that shells out to `ffmpeg`/`ffplay`.
+Keeping those boundaries is what makes almost everything else straightforward
+to unit test without a real terminal or a video file — see `tests/`.
 
 ## Test
 
