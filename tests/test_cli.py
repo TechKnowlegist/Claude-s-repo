@@ -41,8 +41,10 @@ def test_run_headless_writes_correct_frame_count():
     out = io.StringIO()
     run_headless(scene, num_frames=3, fps=0, out=out)
     output = out.getvalue()
-    # Each frame clears the screen (\x1b[2J\x1b[H) before drawing.
-    assert output.count("\x1b[2J\x1b[H") == 3
+    # The screen is cleared exactly once up front (avoids per-frame flicker);
+    # each frame after that just homes the cursor before redrawing.
+    assert output.count("\x1b[2J") == 1
+    assert output.count("\x1b[H") == 3
 
 
 def test_run_headless_stops_when_scene_reports_finished():
@@ -62,14 +64,14 @@ def test_run_headless_stops_when_scene_reports_finished():
 
     out = io.StringIO()
     run_headless(TinyFilm(), num_frames=None, fps=0, out=out)
-    assert out.getvalue().count("\x1b[2J\x1b[H") == 2
+    assert out.getvalue().count("\x1b[H") == 2
 
 
 def test_main_scene_headless_end_to_end(capsys):
     exit_code = main(["scene", "starfield", "--width", "12", "--height", "6", "--frames", "2", "--fps", "0", "--seed", "1"])
     assert exit_code == 0
     captured = capsys.readouterr()
-    assert captured.out.count("\x1b[2J\x1b[H") == 2
+    assert captured.out.count("\x1b[H") == 2
 
 
 def test_main_film_list(capsys):
@@ -84,4 +86,4 @@ def test_main_film_headless_end_to_end(capsys):
     exit_code = main(["film", "echo", "--width", "20", "--height", "10", "--frames", "3", "--fps", "0"])
     assert exit_code == 0
     captured = capsys.readouterr()
-    assert captured.out.count("\x1b[2J\x1b[H") == 3
+    assert captured.out.count("\x1b[H") == 3

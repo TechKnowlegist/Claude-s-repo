@@ -11,18 +11,24 @@ $ asciiverse play your_video.mp4
 
 ## Scenes
 
-Four small, dependency-free simulations, each rendered as plain text:
+Six dependency-free simulations:
 
 - **starfield** — a warp-speed 3D starfield
 - **matrix** — falling glyph rain
 - **life** — Conway's Game of Life on a wrapping grid
 - **fireworks** — rockets that launch, explode, and scatter fading sparks
+- **fireworks-color** — the same, but each burst picks a random hue and
+  fades toward the night sky as it burns out. Full color.
+- **matrix-green** — the classic look: a bright near-white head glyph per
+  column fading down through green to near-black. Full color.
 
 ```
 asciiverse scene <name> [--width] [--height] [--fps] [--seed] [--frames]
 ```
 
 In interactive mode (the default, no `--frames`), press `q` or `Esc` to quit.
+Color scenes always run in plain-terminal mode (never curses, which can't
+interpret the color escapes), forever, until you press Ctrl+C.
 
 Example — a fixed, reproducible run you can pipe or diff:
 
@@ -103,6 +109,11 @@ file anywhere and run it:
 python standalone/ascii_film_garden.py
 ```
 
+Files: `ascii_starfield.py`, `ascii_matrix.py`, `ascii_life.py`,
+`ascii_fireworks.py`, `ascii_fireworks_color.py`, `ascii_matrix_green.py`,
+`ascii_film_orbital.py`, `ascii_film_echo.py`, `ascii_film_garden.py`,
+`ascii_film_neon.py`.
+
 They're kept in sync with the package versions by hand (there are only a
 handful), trading a little duplication for "just run this one file."
 
@@ -121,6 +132,14 @@ tests measure width on those. `cli.py` is the only module that touches
 `curses`; `video.py` is the only module that shells out to `ffmpeg`/`ffplay`.
 Keeping those boundaries is what makes almost everything else straightforward
 to unit test without a real terminal or a video file — see `tests/`.
+
+Playback (`run_headless` in `cli.py`, and `play_video` in `video.py`) clears
+the screen once up front and only homes the cursor (`\x1b[H`) between frames
+rather than clearing every frame (`\x1b[2J`) -- a full clear-and-redraw each
+frame shows as a visible flash on most terminals, which reads as flicker
+("shakiness"), especially once a frame has real work to do like color
+escapes. Every frame is a full-size grid, so homing and overwriting is
+enough; the cursor is also hidden during playback and restored afterward.
 
 ## Test
 

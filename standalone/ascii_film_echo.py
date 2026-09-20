@@ -247,6 +247,10 @@ def main():
 
     delay = 1.0 / FPS
     tick = 0
+    # Clear once and hide the cursor, then just home the cursor each frame
+    # instead of clearing every time -- clearing every frame makes most
+    # terminals flash blank before each redraw, which looks like flicker.
+    sys.stdout.write("\x1b[2J\x1b[?25l")
     try:
         while tick < total:
             if tick < title_duration:
@@ -262,14 +266,16 @@ def main():
                 local = tick - (title_duration + life_duration + matrix_duration + stars_duration)
                 lines = shot_title(local, WIDTH, HEIGHT, ["E C H O", "", "-- end --"], end_duration, FPS)
 
-            sys.stdout.write("\x1b[2J\x1b[H")
+            sys.stdout.write("\x1b[H")
             sys.stdout.write("\n".join(lines))
             sys.stdout.write("\n")
             sys.stdout.flush()
             time.sleep(delay)
             tick += 1
     except KeyboardInterrupt:
-        print()
+        pass
+    finally:
+        sys.stdout.write("\x1b[?25h\n")
 
 
 if __name__ == "__main__":

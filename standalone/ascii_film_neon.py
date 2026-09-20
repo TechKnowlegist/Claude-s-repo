@@ -116,6 +116,10 @@ def main():
     grid_scroll = 0.0
     delay = 1.0 / FPS
     tick = 0
+    # Clear once and hide the cursor, then just home the cursor each frame
+    # instead of clearing every time -- clearing every frame makes most
+    # terminals flash blank before each redraw, which looks like flicker.
+    sys.stdout.write("\x1b[2J\x1b[?25l")
     try:
         while tick < total:
             grid = [[[" ", None, None] for _ in range(WIDTH)] for _ in range(HEIGHT)]
@@ -196,14 +200,16 @@ def main():
                                 grid[row][xx][1] = TEXT_COLOR
 
             lines = [render_row([(c[0], c[1], c[2]) for c in row]) for row in grid]
-            sys.stdout.write("\x1b[2J\x1b[H")
+            sys.stdout.write("\x1b[H")
             sys.stdout.write("\n".join(lines))
             sys.stdout.write("\n")
             sys.stdout.flush()
             time.sleep(delay)
             tick += 1
     except KeyboardInterrupt:
-        print(RESET)
+        pass
+    finally:
+        sys.stdout.write(RESET + "\x1b[?25h\n")
 
 
 if __name__ == "__main__":

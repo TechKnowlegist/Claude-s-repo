@@ -64,16 +64,22 @@ def main():
     rng = random.Random(SEED)
     stars = [spawn_star(rng, fresh=False) for _ in range(NUM_STARS)]
     delay = 1.0 / FPS
+    # Clear once and hide the cursor, then just home the cursor each frame
+    # instead of clearing every time -- clearing every frame makes most
+    # terminals flash blank before each redraw, which looks like flicker.
+    sys.stdout.write("\x1b[2J\x1b[?25l")
     try:
         while True:
-            sys.stdout.write("\x1b[2J\x1b[H")
+            sys.stdout.write("\x1b[H")
             sys.stdout.write("\n".join(render(stars, WIDTH, HEIGHT)))
             sys.stdout.write("\n")
             sys.stdout.flush()
             step(stars, rng, SPEED)
             time.sleep(delay)
     except KeyboardInterrupt:
-        print()
+        pass
+    finally:
+        sys.stdout.write("\x1b[?25h\n")
 
 
 if __name__ == "__main__":

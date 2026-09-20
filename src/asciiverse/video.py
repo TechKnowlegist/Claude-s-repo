@@ -209,9 +209,14 @@ def play_video(
 
     delay = 1.0 / fps if fps > 0 else 0
     next_frame_at = time.monotonic()
+    out.write("\x1b[2J\x1b[?25l")  # clear once, hide the cursor
+    out.flush()
     try:
         for lines in iter_video_ascii_frames(path, width, height, fps, color=color):
-            out.write("\x1b[2J\x1b[H")
+            # Home the cursor rather than clearing every frame -- a full
+            # clear-and-redraw each frame shows as a visible flash/flicker
+            # on most terminals, especially with color escapes in the mix.
+            out.write("\x1b[H")
             out.write("\n".join(lines))
             out.write("\n")
             out.flush()
@@ -222,6 +227,8 @@ def play_video(
     except KeyboardInterrupt:
         pass
     finally:
+        out.write("\x1b[?25h")
+        out.flush()
         if audio_proc is not None:
             audio_proc.terminate()
             audio_proc.wait()

@@ -52,22 +52,36 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def run_headless(scene, num_frames: int | None, fps: float, out=None) -> None:
-    """Render frames to ``out`` and exit. ``num_frames=None`` runs until ``scene.finished``."""
+    """Render frames to ``out`` and exit. ``num_frames=None`` runs until ``scene.finished``.
+
+    Clears the screen once up front and then only homes the cursor between
+    frames (rather than clearing every frame) -- a full clear-and-redraw
+    each frame makes most terminals show a visible blank flash before the
+    next frame paints, which reads as flicker/"shakiness", especially once
+    a frame has real work to do (e.g. color escapes). Since every frame is
+    a full-size grid, homing the cursor and overwriting is enough.
+    """
     out = sys.stdout if out is None else out
     delay = 1.0 / fps if fps > 0 else 0
+    out.write("\x1b[2J\x1b[?25l")  # clear once, hide the cursor
+    out.flush()
     i = 0
-    while num_frames is None or i < num_frames:
-        out.write("\x1b[2J\x1b[H")  # clear screen, home cursor
-        out.write("\n".join(scene.render()))
-        out.write("\n")
+    try:
+        while num_frames is None or i < num_frames:
+            out.write("\x1b[H")  # home cursor, no clear -- avoids the flash
+            out.write("\n".join(scene.render()))
+            out.write("\n")
+            out.flush()
+            scene.step()
+            i += 1
+            if getattr(scene, "finished", False):
+                break
+            is_last = num_frames is not None and i >= num_frames
+            if delay and not is_last:
+                time.sleep(delay)
+    finally:
+        out.write("\x1b[?25h")  # always restore the cursor
         out.flush()
-        scene.step()
-        i += 1
-        if getattr(scene, "finished", False):
-            break
-        is_last = num_frames is not None and i >= num_frames
-        if delay and not is_last:
-            time.sleep(delay)
 
 
 def run_interactive(scene, fps: float) -> None:
@@ -98,13 +112,19 @@ def run_interactive(scene, fps: float) -> None:
 
 
 def _play(scene, frames: int | None, fps: float) -> None:
-    if frames is not None:
-        run_headless(scene, num_frames=frames, fps=fps)
-    else:
-        try:
+    # Color scenes/films embed raw ANSI escapes in their output; curses
+    # would print those literally instead of interpreting them, so anything
+    # marked color=True always runs through the plain headless writer
+    # (forever, if no explicit --frames was given) rather than curses.
+    try:
+        if frames is not None:
+            run_headless(scene, num_frames=frames, fps=fps)
+        elif getattr(scene, "color", False):
+            run_headless(scene, num_frames=None, fps=fps)
+        else:
             run_interactive(scene, fps=fps)
-        except KeyboardInterrupt:
-            pass
+    except KeyboardInterrupt:
+        pass
 
 
 def main(argv: list[str] | None = None) -> int:
